@@ -33,6 +33,26 @@ python -m assistant.main --mode enterprise   # 企业数字助理全链路演示
 EDA_TTS_REAL=1 python -m assistant.main --mode console   # 助手用系统语音开口说话（语音入门，见 docs/voice.md）
 ```
 
+## 🎛 可视化语音台：一条命令跑起来（推荐先试这个）
+
+把整个企业数字助理装进**浏览器界面**：状态光环 + 实时字幕 + 对话时间线 + 执行追踪，
+麦克风按钮用浏览器原生中文语音识别（Chrome/Edge，无需任何额外依赖），回复自动朗读：
+
+```bash
+# macOS / Linux
+./scripts/run.sh            # 首次自动建 .venv 装依赖 → 启动 → 自动打开浏览器
+
+# Windows
+scripts\run.bat
+
+# 想看界面自动演示效果（录屏/验收用）
+./scripts/run.sh --demo
+```
+
+打开后：**按住 🎙 说话**（或按住空格、或点左侧示例、或输入文字回车）——
+「我是王小明，办理入职」「报销怎么走流程」「呼叫李华」「给张伟发消息下午三点开会」。
+真实语音链路零安装依赖；交互界面即 `web/hud.html`，`file://` 直接双击也能看设计预览。
+
 ## 三份必读文档
 
 | 文档 | 内容 |
@@ -94,12 +114,15 @@ local-voice-assistant/
 │   └── settings.example.yaml  # 配置模板（复制为 settings.yaml 使用）
 ├── assistant/
 │   ├── main.py                # 守护进程入口（console / demo / enterprise）
+│   ├── hud.py                 # HUD 可视化语音台（SSE 事件总线 + /ask + 自动演示，零依赖）
 │   ├── config.py              # 配置加载
 │   ├── state_machine.py       # 触发仲裁状态机
 │   ├── brain/                 # 大脑接口 + 实现（echo / enterprise / workbuddy 预留）
 │   ├── enterprise/            # 企业数字助理：知识库/名录/培训/企业微信/音箱
 │   ├── sensing/ · voice/      # 感知与语音适配器（接口+桩，含 TTS 真人发声开关）
 │   └── twin/                  # 数字分身：schema / recorder / export
+├── web/
+│   └── hud.html               # HUD 界面（单文件：光环/字幕/时间线/执行追踪/麦克风）
 ├── data/
 │   ├── knowledge/             # 种子制度文档（markdown）
 │   ├── enterprise/            # 员工名录样例
@@ -107,6 +130,7 @@ local-voice-assistant/
 ├── scripts/
 │   ├── setup.sh · setup.ps1   # macOS/Linux/Windows 一键部署入口
 │   ├── quickstart.py          # 跨平台引导向导（环境→依赖→配置→Obsidian→试运行）
+│   ├── run.sh · run.bat       # 🎛 一条命令启动可视化语音台
 │   └── run_console.sh
 ├── tests/                     # 单元测试（21 项）
 └── requirements.txt
@@ -171,6 +195,7 @@ WorkBuddy 会话、取回回复交 TTS 播报。长期记忆沿用 WorkBuddy 的
 
 - [x] M0 项目骨架 + 状态机 + echo 大脑
 - [x] M-E1 企业版：知识库 + 员工名录 + 意图路由大脑 + 入职培训 + 企业微信/音箱适配器
+- [x] M-H1 HUD 可视化语音台：一条命令启动 + 浏览器语音对话界面（光环/字幕/动作追踪/知情同意）
 - [x] M-R1 可分发：三平台一键部署向导 + Obsidian 知识库联动 + 语音落地指南 + 企业数字助理技能包
 - [ ] M1 真机听觉闭环：Porcupine 唤醒词 + FunASR + edge-tts
 - [ ] M2 对接 WorkBuddy 大脑（会话上下文 + 记忆 + 工具执行）

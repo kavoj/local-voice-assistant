@@ -53,3 +53,10 @@ enterprise:
     agentid: ""              # app 模式：应用 AgentId
   speaker:
     provider: "console"      # console（桩）| 预留: xiaomi / tencent / 自研 HTTP 音箱
+
+# ===== HUD 可视化语音台（python -m assistant.hud）=====
+hud:
+  host: "127.0.0.1"          # 仅本机访问；如需局域网内手机/平板访问改成 "0.0.0.0"
+  port: 8765
+  brain: "enterprise"        # enterprise（企业数字助理：知识库/呼叫/发消息/培训）| echo
+  open_browser: true         # 启动后自动打开浏览器

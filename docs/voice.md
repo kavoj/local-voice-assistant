@@ -1,4 +1,18 @@
-# 语音对话：从文字到真人口语，三档落地
+# 语音对话：从文字到真人口语，多档落地
+
+## 档位 1 · 零安装真语音（推荐先跑）——HUD + 浏览器原生语音识别
+
+`./scripts/run.sh` 一条命令启动的**可视化语音台**（`web/hud.html`），自带最省事的语音闭环：
+麦克风按钮调用 **Chrome/Edge 内置的中文语音识别**（Web Speech API），助手回复用浏览器
+**speechSynthesis 朗读**——不需要安装任何 Python 音频依赖、不需要下载模型：
+
+```bash
+./scripts/run.sh        # 启动后自动打开浏览器 → 按住 🎙 说话
+```
+
+- 优点：**零依赖真语音**、跨平台一致、UI 即界面（状态光环/字幕/动作追踪）；识别在云端但不落库
+- 缺点：依赖浏览器（Chrome/Edge），不能脱离界面独立运行——适合先验证「语音交互体验」
+- 想离线或端侧识别，仍走下面的档位 2 / 3
 
 ## 架构回顾：语音 = 耳朵(ASR) + 嘴(TTS)，大脑不变
 
@@ -22,7 +36,7 @@ EDA_TTS_REAL=1 python -m assistant.main --mode console   # 回复将真人朗读
 
 输入仍靠打字——这是"先让嘴动起来"，验证对话节奏与话术。
 
-## 档位 1 · 最省事的真语音（建议先跑这条）——Whisper 命令行流式转写
+## 档位 2 · 命令行真语音——Whisper 流式转写 + 系统朗读
 
 用 [whisper.cpp](https://github.com/ggerganov/whisper.cpp)（单二进制，Windows/macOS/Linux 都有 release），
 `stream` 工具实时把麦克风语音转成文本行，**把文本行直接喂给本项目 console**：

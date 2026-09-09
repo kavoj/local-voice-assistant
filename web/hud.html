@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>阿鹭 · 企业数字助理</title>
+<style>
+  :root{
+    --bg0:#05070d; --bg1:#0a101f; --panel:rgba(148,163,184,.055);
+    --line:rgba(148,163,184,.15); --text:#e9effb; --dim:#8da3c0; --faint:#5c6f8c;
+    --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1100px 520px at 12% -8%, rgba(99,102,241,.16), transparent 60%),
+      radial-gradient(900px 480px at 108% 14%, rgba(34,211,238,.10), transparent 55%),
+      radial-gradient(1000px 700px at 50% 120%, rgba(168,85,247,.08), transparent 60%),
+      linear-gradient(180deg,var(--bg0),var(--bg1) 45%,var(--bg0));
+    overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  ::selection{background:rgba(34,211,238,.3)}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-thumb{background:rgba(148,163,184,.25);border-radius:3px}
+
+  /* ---------- 顶栏 ---------- */
+  header{
+    display:flex;align-items:center;gap:14px;justify-content:space-between;
+    padding:12px 22px;border-bottom:1px solid var(--line);
+    background:rgba(5,8,14,.6);backdrop-filter:blur(8px);flex:none;
+  }
+  .brand{display:flex;align-items:center;gap:11px}
+  .logo{
+    width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:22px;
+    background:linear-gradient(145deg,rgba(34,211,238,.18),rgba(168,85,247,.14));
+    border:1px solid rgba(34,211,238,.35);box-shadow:0 0 18px rgba(34,211,238,.18);
+  }
+  h1{font-size:17px;font-weight:700;letter-spacing:.5px}
+  .tag{font-size:11px;color:var(--faint);margin-top:1px}
+  .head-right{display:flex;align-items:center;gap:10px}
+  .badge{
+    font-size:11px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);
+    color:var(--dim);background:var(--panel);white-space:nowrap;
+  }
+  .badge.live{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+  .badge.demo{color:var(--warn);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.07)}
+  .consent{
+    display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);
+    padding:5px 12px;border-radius:99px;border:1px solid var(--line);background:var(--panel);
+    cursor:pointer;user-select:none;
+  }
+  .consent input{display:none}
+  .consent i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--faint);position:relative;transition:.2s}
+  .consent input:checked + i{background:var(--ok);border-color:var(--ok);box-shadow:0 0 10px rgba(52,211,153,.5)}
+  .consent input:checked + i::after{
+    content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;
+    border:solid #06281c;border-width:0 2px 2px 0;transform:rotate(45deg);
+  }
+  .consent b{font-weight:600}
+
+  /* ---------- 主布局 ---------- */
+  main{
+    flex:1;display:grid;grid-template-columns:350px minmax(0,1fr) 300px;gap:14px;
+    padding:14px 20px;min-height:0;
+  }
+  @media (max-width:1060px){ main{grid-template-columns:320px 1fr} aside.right{display:none} }
+  @media (max-width:760px){ main{grid-template-columns:1fr;overflow:auto} aside.left,.mid{overflow:visible} }
+
+  /* ---------- 左栏：光环 ---------- */
+  aside.left{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .stage{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:20px;
+    padding:26px 0 22px;flex:none;
+  }
+  .halo{position:relative;width:264px;height:264px}
+  .ring{position:absolute;border-radius:50%}
+  .ring-a{inset:0;border:1px dashed var(--ac-dim);animation:spin 46s linear infinite}
+  .ring-b{inset:17px;border:1px dashed var(--ac-dim);animation:spin 34s linear infinite reverse;opacity:.8}
+  .ring-c{inset:34px;border:1px solid var(--ac-dim);opacity:.85;animation:breathe 4.5s ease-in-out infinite}
+  .glow{
+    position:absolute;inset:44px;border-radius:50%;
+    background:radial-gradient(circle,var(--ac-glow) 0%,transparent 72%);
+    animation:breathe 3.6s ease-in-out infinite;
+  }
+  .ripple{
+    position:absolute;inset:0;border-radius:50%;border:2px solid var(--ac);
+    opacity:0;pointer-events:none;display:none;
+  }
+  body[data-phase="speaking"] .ripple{display:block;animation:ripple 1.7s ease-out infinite}
+  body[data-phase="speaking"] .ripple:nth-child(3){animation-delay:.55s}
+  body[data-phase="speaking"] .ripple:nth-child(4){animation-delay:1.1s}
+  .core{
+    position:absolute;inset:58px;border-radius:50%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:3px;text-align:center;padding:0 16px;
+    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.06),rgba(255,255,255,.015));
+    border:1px solid var(--ac-line);box-shadow:0 0 44px var(--ac-glow),inset 0 0 26px rgba(0,0,0,.35);
+    transition:border-color .5s,box-shadow .5s;
+  }
+  .core .state-word{font-size:23px;font-weight:700;letter-spacing:2px;color:var(--ac);text-shadow:0 0 16px var(--ac-glow)}
+  .core .state-sub{font-size:11px;color:var(--dim);line-height:1.5}
+  .core .micro{display:none;font-size:10px;color:var(--ac);letter-spacing:1px;margin-top:2px}
+  body[data-phase="listening"] .micro{display:block;animation:blink 1s steps(2) infinite}
+  .interim{
+    position:absolute;left:14px;right:14px;top:-16px;transform:translateY(-100%);
+    font-size:15px;line-height:1.5;color:var(--ac);text-align:center;min-height:0;
+    text-shadow:0 0 10px var(--ac-glow);opacity:0;transition:.25s;
+  }
+  .interim.on{opacity:1}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+  @keyframes ripple{0%{opacity:.6;transform:scale(.94)}100%{opacity:0;transform:scale(1.5)}}
+  @keyframes blink{50%{opacity:.25}}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+
+  /* 快捷意图 */
+  .chips{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0;overflow:auto}
+  .chips .lbl{font-size:11px;color:var(--faint);letter-spacing:1.5px}
+  .chip{
+    display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:12px;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    font-size:12.5px;transition:.18s;text-align:left;font-family:inherit;
+  }
+  .chip:hover{transform:translateX(3px);border-color:var(--ac-line);background:rgba(148,163,184,.1)}
+  .chip .e{font-size:16px;flex:none}
+  .chip .k{color:var(--faint);margin-left:auto;font-size:10.5px;flex:none}
+  .hint{font-size:10.5px;color:var(--faint);line-height:1.7;text-align:center;padding:2px 8px 4px}
+  kbd{
+    font-family:inherit;font-size:10px;padding:1px 6px;border-radius:5px;
+    border:1px solid var(--line);border-bottom-width:2px;background:rgba(148,163,184,.08);color:var(--dim);
+  }
+
+  /* ---------- 中栏：时间线 ---------- */
+  .mid{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+  .mid-head{
+    display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line);
+    font-size:12.5px;color:var(--dim);flex:none;justify-content:space-between;
+  }
+  .mid-head .t{display:flex;align-items:center;gap:8px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ac);box-shadow:0 0 10px var(--ac-glow);transition:.4s}
+  .clear-btn{
+    font-size:11px;color:var(--faint);background:none;border:1px solid var(--line);
+    padding:3px 10px;border-radius:99px;cursor:pointer;font-family:inherit;
+  }
+  .clear-btn:hover{color:var(--text);border-color:var(--dim)}
+  #timeline{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px}
+  .empty{color:var(--faint);text-align:center;margin-top:56px;font-size:12.5px;line-height:2}
+  .row{display:flex;gap:9px;animation:pop .28s ease both}
+  .row.user{flex-direction:row-reverse}
+  .avatar{
+    width:28px;height:28px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:14px;
+    background:var(--panel);border:1px solid var(--line);
+  }
+  .row.user .avatar{border-color:rgba(34,211,238,.35);background:rgba(34,211,238,.08)}
+  .bubble{
+    max-width:78%;padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.75;
+    background:rgba(148,163,184,.07);border:1px solid var(--line);word-break:break-word;
+  }
+  .row.user .bubble{background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.28)}
+  .bubble .meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:10.5px}
+  .bubble .meta .c{
+    padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--dim);background:rgba(5,8,14,.4);
+  }
+  .bubble .meta .c.src{color:var(--ok);border-color:rgba(52,211,153,.35)}
+  .bubble .meta .c.ch{color:var(--ac);border-color:var(--ac-line)}
+  .bubble .meta .c.done{color:var(--err);border-color:rgba(248,113,113,.35)}
+  .ts{margin-left:auto;color:var(--faint);font-weight:400}
+  .caret{display:inline-block;width:7px;animation:blink 1s steps(2) infinite;color:var(--ac)}
+
+  /* ---------- 右栏 ---------- */
+  aside.right{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:13px 14px;display:flex;flex-direction:column;min-height:0}
+  .panel h3{font-size:11.5px;color:var(--faint);letter-spacing:1.5px;margin-bottom:10px;flex:none}
+  #trail{overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+  .acard{
+    border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:rgba(5,8,14,.35);
+    animation:pop .3s ease both;font-size:12px;
+  }
+  .acard .l1{display:flex;align-items:center;gap:7px}
+  .acard .e{font-size:15px}
+  .acard .title{font-weight:600;flex:1}
+  .acard .st{font-size:10px;padding:1px 7px;border-radius:99px;flex:none}
+  .acard .st.ok{color:var(--ok);background:rgba(52,211,153,.1)}
+  .acard .st.no{color:var(--err);background:rgba(248,113,113,.1)}
+  .acard .det{color:var(--dim);line-height:1.6;margin-top:4px;font-size:11.5px}
+  .acard .src{display:inline-block;margin-top:5px;font-size:10px;color:var(--ok);border:1px solid rgba(52,211,153,.3);padding:1px 7px;border-radius:99px}
+  .acard .act{margin-top:5px;font-family:ui-monospace,Menlo,monospace;font-size:9.5px;color:var(--faint);word-break:break-all}
+  .acard.hide{display:none}
+  #stats{display:flex;gap:8px;flex-wrap:wrap}
+  .stat{flex:1;min-width:82px;text-align:center;padding:10px 6px;border:1px solid var(--line);border-radius:12px;background:rgba(5,8,14,.35)}
+  .stat b{display:block;font-size:20px;color:var(--ac)}
+  .stat span{font-size:10px;color:var(--faint)}
+
+  /* ---------- 底部输入 ---------- */
+  .composer{
+    flex:none;display:flex;align-items:center;gap:10px;padding:12px 20px 14px;
+    border-top:1px solid var(--line);background:rgba(5,8,14,.6);backdrop-filter:blur(8px);
+  }
+  #micBtn{
+    width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;flex:none;font-size:19px;
+    display:grid;place-items:center;transition:.2s;color:#04121a;
+    background:linear-gradient(145deg,var(--ac),#0ea5b7);
+    box-shadow:0 0 0 rgba(34,211,238,0);position:relative;
+  }
+  body[data-phase="listening"] #micBtn{animation:micpulse 1.3s ease-in-out infinite}
+  @keyframes micpulse{
+    0%,100%{box-shadow:0 0 0 0 var(--ac-glow)}
+    50%{box-shadow:0 0 0 16px rgba(34,211,238,0)}
+  }
+  #micBtn:active{transform:scale(.92)}
+  #micBtn.off{background:linear-gradient(145deg,#7d8ea8,#5b6b85);color:#1b2433}
+  .field{flex:1;display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:2px 6px 2px 16px;transition:.2s}
+  .field:focus-within{border-color:var(--ac-line);box-shadow:0 0 0 3px var(--ac-glow)}
+  #textIn{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:inherit;padding:9px 0}
+  #textIn::placeholder{color:var(--faint)}
+  #sendBtn{
+    border:none;background:var(--ac);color:#04121a;font-size:14px;font-weight:700;cursor:pointer;
+    width:38px;height:38px;border-radius:12px;flex:none;transition:.2s;font-family:inherit;
+  }
+  #sendBtn:hover{filter:brightness(1.15)}
+  #toast{
+    position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(8px);
+    background:rgba(5,8,14,.92);border:1px solid var(--line);border-radius:10px;padding:7px 14px;
+    font-size:12px;color:var(--dim);opacity:0;pointer-events:none;transition:.25s;z-index:9;
+  }
+  #toast.on{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body data-phase="idle">
+
+<header>
+  <div class="brand">
+    <div class="logo">🦜</div>
+    <div>
+      <h1 id="assistantName">阿鹭</h1>
+      <p class="tag">企业数字助理 · 本地语音台 · <span id="brainTag">企业大脑</span></p>
+    </div>
+  </div>
+  <div class="head-right">
+    <span id="liveBadge" class="badge">连接中…</span>
+    <span id="ttsBadge" class="badge">🔊 浏览器语音</span>
+    <label class="consent" title="知情同意：关 = 不再采集你的对话行为数据（数字分身训练）">
+      <input type="checkbox" id="twinOn" checked><i></i><b id="consentWord">采集</b>
+    </label>
+  </div>
+</header>
+
+<main>
+  <!-- 左：状态光环 + 快捷意图 -->
+  <aside class="left">
+    <div class="stage">
+      <div class="interim" id="interim"></div>
+      <div class="halo">
+        <div class="ring ring-a"></div>
+        <div class="ring ring-b"></div>
+        <div class="ring ring-c"></div>
+        <div class="ripple"></div><div class="ripple"></div><div class="ripple"></div>
+        <div class="glow"></div>
+        <div class="core">
+          <div class="state-word" id="stateWord">待命</div>
+          <div class="state-sub" id="stateSub">按住麦克风，或点下方示例</div>
+          <div class="micro">● REC</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <div class="lbl">试试这样说</div>
+      <button class="chip" data-ask="我是王小明，需要办理入职"><span class="e">🎓</span>我是王小明，办理入职<span class="k">培训 5 节</span></button>
+      <button class="chip" data-ask="报销怎么走流程"><span class="e">📚</span>报销怎么走流程<span class="k">带出处</span></button>
+      <button class="chip" data-ask="呼叫李华"><span class="e">📞</span>呼叫李华<span class="k">音箱</span></button>
+      <button class="chip" data-ask="给张伟发消息下午三点会议室过一下季度方案"><span class="e">✉️</span>给张伟发消息…<span class="k">企业微信</span></button>
+    </div>
+    <div class="hint">
+      按住 <kbd>🎙 麦克风</kbd> 或 <kbd>空格</kbd> 说话 · 输入框回车=文字发送<br>
+      <kbd>Esc</kbd> 打断播报 · 右上「采集」为数字分身数据开关
+    </div>
+  </aside>
+
+  <!-- 中：对话时间线 -->
+  <section class="mid">
+    <div class="mid-head">
+      <div class="t"><span class="dot"></span>对话时间线 · <span id="turnCount">0</span> 轮</div>
+      <button class="clear-btn" id="clearBtn">清空</button>
+    </div>
+    <div id="timeline">
+      <div class="empty">👇 按住麦克风说话，或点击左侧示例开始<br>所有处理都在本机完成，无网络上传</div>
+    </div>
+  </section>
+
+  <!-- 右：执行追踪 + 数据 -->
+  <aside class="right">
+    <div class="panel" style="flex:1.4">
+      <h3>⚡ 执行追踪</h3>
+      <div id="trail"></div>
+    </div>
+    <div class="panel" style="flex:1">
+      <h3>🧬 数字分身 · 今日</h3>
+      <div id="stats">
+        <div class="stat"><b id="stTurns">0</b><span>对话轮次</span></div>
+        <div class="stat"><b id="stDone">0</b><span>任务完成</span></div>
+        <div class="stat"><b id="stOn">开</b><span>行为采集</span></div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- 底部输入 -->
+<footer class="composer">
+  <button id="micBtn" title="按住说话（浏览器中文语音识别）">🎙</button>
+  <div class="field">
+    <input id="textIn" type="text" placeholder="不方便说话？输入文字问阿鹭，回车发送…" autocomplete="off">
+    <button id="sendBtn" title="发送">➤</button>
+  </div>
+</footer>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= 状态与常量 ================= */
+const PHASES = {
+  idle:      { word:"待命",   sub:"按住麦克风，或点右侧示例",  color:"#22d3ee" },
+  listening: { word:"聆听中", sub:"正在识别你的话…",          color:"#34d399" },
+  thinking:  { word:"思考中", sub:"理解意图 · 查知识库…",     color:"#a78bfa" },
+  speaking:  { word:"播报中", sub:"正在回复你…",              color:"#fbbf24" },
+};
+const INTENT_LABEL = { call:"📞 呼叫", wecom_send:"✉️ 企业微信", kb_qa:"📚 知识库",
+  onboarding:"🎓 培训", session_end:"👋 结束", unknown:"💬 对话", chat:"💬 对话" };
+let meta = { name:"阿鹭", brain:"企业大脑", tts_mode:"browser", twin_on:true };
+let live = false;            // 是否连上真实后端
+let typer = null, speaking = false, speechOn = true;
+let interimBuf = "", finalBuf = "", recog = null, nowListening = false;
+const $ = s => document.querySelector(s);
+const toast = (m, ms=2600) => { const t=$("#toast"); t.textContent=m; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"), ms); };
+
+/* ================= 状态光环 ================= */
+function setPhase(p){
+  document.body.dataset.phase = p;
+  const cfg = PHASES[p] || PHASES.idle;
+  $("#stateWord").textContent = cfg.word;
+  $("#stateSub").textContent = cfg.sub;
+  const C = document.body.style;
+  C.setProperty("--ac", cfg.color);
+  C.setProperty("--ac-glow", hexA(cfg.color, .22));
+  C.setProperty("--ac-dim", hexA(cfg.color, .30));
+  C.setProperty("--ac-line", hexA(cfg.color, .42));
+}
+function hexA(hex, a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+setPhase("idle");
+
+/* ================= 时间线 ================= */
+function emptyState(){ const e=$(".empty"); e.style.display = (!$("#timeline").children.length) ? "" : "none"; }
+function nowTime(){ return new Date().toTimeString().slice(0,5); }
+function userBubble(text, ch){
+  $("#timeline").insertAdjacentHTML("beforeend",
+    `<div class="row user"><div class="avatar">👤</div><div class="bubble">${esc(text)}` +
+    `<div class="meta"><span class="c ch">${ch==="voice"?"🎙 语音":"⌨ 文字"}</span><span class="ts">${nowTime()}</span></div></div></div>`);
+  emptyState(); scrollBottom();
+}
+function assistantBubble(text, intent, done, isDemo){
+  const chip = INTENT_LABEL[intent] ? `<span class="c">${INTENT_LABEL[intent]}</span>` : "";
+  const doneC = (intent!=="unknown" && !done) ? `<span class="c done">⚠ 未完成</span>` : "";
+  const el = document.createElement("div");
+  el.className = "row";
+  el.innerHTML = `<div class="avatar">🦜</div><div class="bubble"><div class="txt"></div>` +
+    `<div class="meta">${chip}${doneC}<span class="ts">${nowTime()}</span></div></div>`;
+  $("#timeline").appendChild(el); emptyState(); scrollBottom();
+  const txt = el.querySelector(".txt");
+  let i = 0;
+  const timer = setInterval(()=>{          // 每个气泡独立打字机（互不打断）
+    txt.textContent = text.slice(0, i += 3);
+    if (i >= text.length) clearInterval(timer);
+  }, 18);
+  if (text && !isDemo && speechOn && meta.tts_mode!=="system") speak(text);
+}
+function scrollBottom(){ const t=$("#timeline"); t.scrollTop = t.scrollHeight; }
+
+/* ================= 朗读（浏览器 speechSynthesis） ================= */
+let voices = [];
+function loadVoices(){ voices = speechSynthesis.getVoices(); }
+if ("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+function speak(text){
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 1.0; u.pitch = 1.0;
+  const zh = voices.find(v=>/^zh[-_]CN/i.test(v.lang)) || voices.find(v=>/^zh/i.test(v.lang));
+  if (zh) u.voice = zh;
+  u.onstart = ()=>{ speaking=true; setPhase("speaking"); };
+  u.onend = u.onerror = ()=>{ speaking=false; setPhase("idle"); };
+  speechSynthesis.speak(u);
+}
+function stopSpeak(){ if ("speechSynthesis" in window) speechSynthesis.cancel(); speaking=false; setPhase("idle"); }
+document.addEventListener("keydown", e=>{ if (e.key==="Escape") stopSpeak(); });
+
+/* ================= 执行追踪 / 数据 ================= */
+function pushAction(a){
+  const card = document.createElement("div");
+  card.className = "acard";
+  card.innerHTML = `<div class="l1"><span class="e">${a.icon||"💬"}</span><span class="title">${esc(a.title||"对话")}</span>` +
+    `<span class="st ${a.done?"ok":"no"}">${a.done?"✓ 完成":"…"}</span></div>` +
+    `<div class="det">${esc(a.detail||"")}</div>` +
+    (a.source?`<span class="src">📄 ${esc(a.source)}</span>`:"") +
+    (a.action?`<div class="act">${esc(a.action)}</div>`:"");
+  const trail = $("#trail");
+  trail.prepend(card);
+  while (trail.children.length > 9) trail.lastChild.remove();
+}
+function updateTwin(st){
+  $("#stTurns").textContent = st.turns ?? 0;
+  $("#stDone").textContent = st.done ?? 0;
+  $("#stOn").textContent = st.on ? "开" : "关";
+  $("#consentWord").textContent = st.on ? "采集中" : "已暂停";
+  $("#turnCount").textContent = st.turns ?? 0;
+}
+
+/* ================= 发送一轮对话 ================= */
+async function ask(text, ch){
+  text = (text||"").trim(); if (!text) return;
+  userBubble(text, ch==="voice"?"voice":"text");
+  setPhase("thinking");
+  if (!live){ demoAnswer(text); return; }        // 预览模式：本地模拟回复
+  try{
+    const r = await fetch("/ask", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ text, channel: ch==="voice"?"voice":"text" }) });
+    const j = await r.json();
+    if (!j.ok) toast("后端处理失败：" + (j.reason||""), 3600);
+  }catch(err){ toast("与本地服务连接失败：" + err.message, 3600); }
+}
+
+/* ================= SSE：真实后端事件 ================= */
+function onEvent(ev){
+  switch(ev.type){
+    case "meta":
+      meta = Object.assign(meta, ev);
+      $("#assistantName").textContent = ev.name || "阿鹭";
+      $("#brainTag").textContent = ev.brain || "企业大脑";
+      $("#ttsBadge").textContent = ev.tts_mode==="system" ? "🔊 系统真人语音" : "🔊 浏览器语音";
+      updateTwin({on:ev.twin_on});
+      break;
+    case "state": setPhase(ev.phase); break;
+    case "user_text":
+      setPhase(ev.channel==="voice" ? "listening" : "thinking");
+      break;
+    case "assistant_text":
+      assistantBubble(ev.text, ev.intent, ev.task_done, false);
+      break;
+    case "action": pushAction(ev); break;
+    case "twin": updateTwin(ev); break;
+  }
+}
+function connect(){
+  const evt = new EventSource("/events");
+  evt.onmessage = e => { try{ onEvent(JSON.parse(e.data)); }catch(_){} };
+  evt.onopen = () => { live = true; $("#liveBadge").textContent="● 实时"; $("#liveBadge").classList.add("live"); };
+  evt.onerror = () => { /* 后端重启后 EventSource 自动重连 */ };
+}
+
+/* ================= 麦克风（Web Speech 中文识别） ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let micSupported = !!SR;
+function micStart(){
+  if (!micSupported){ toast("此浏览器不支持语音识别，建议用 Chrome / Edge"); return; }
+  stopSpeak();
+  if (!recog){
+    recog = new SR();
+    recog.lang = "zh-CN"; recog.continuous = false; recog.interimResults = true;
+    recog.onstart = ()=>{ nowListening = true; interimBuf = finalBuf = "";
+      $("#micBtn").classList.remove("off"); setPhase("listening"); };
+    recog.onresult = e=>{
+      let interim="";
+      for (let i=e.resultIndex;i<e.results.length;i++){
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalBuf += t; else interim += t;
+      }
+      interimBuf = interim;
+      const box = $("#interim");
+      if (interim){ box.textContent = "「" + interim + "」"; box.classList.add("on"); }
+      else box.classList.remove("on");
+    };
+    recog.onerror = e=>{
+      $("#interim").classList.remove("on");
+      if (e.error==="not-allowed") toast("麦克风被拒绝：请允许浏览器使用麦克风");
+      else if (e.error!=="aborted" && e.error!=="no-speech") toast("语音识别出错："+e.error);
+    };
+    recog.onend = ()=>{
+      nowListening = false; $("#micBtn").classList.add("off");
+      $("#interim").classList.remove("on"); $("#interim").textContent="";
+      const text = (finalBuf || interimBuf).trim();
+      if (text){ ask(text, "voice"); }
+      else if (!live){ } 
+    };
+  }
+  try{ recog.start(); }catch(_){}
+}
+function micStop(){ if (recog && nowListening){ try{ recog.stop(); }catch(_){} } }
+
+const micBtn = $("#micBtn");
+micBtn.addEventListener("pointerdown", e=>{ e.preventDefault(); micStart(); });
+micBtn.addEventListener("pointerup", micStop);
+micBtn.addEventListener("pointerleave", micStop);
+micBtn.addEventListener("pointercancel", micStop);
+micBtn.classList.toggle("off", !micSupported);   // 不支持语音识别时置灰，仍可文字输入
+/* 按住空格说话（输入框聚焦时不触发） */
+document.addEventListener("keydown", e=>{
+  if (e.code==="Space" && !nowListening && micSupported &&
+      !/INPUT|TEXTAREA/.test(document.activeElement.tagName)){ e.preventDefault(); micStart(); }
+});
+document.addEventListener("keyup", e=>{ if (e.code==="Space") micStop(); });
+
+/* ================= 文字输入 ================= */
+function sendText(){
+  const v = $("#textIn").value.trim();
+  if (!v) return;
+  $("#textIn").value = "";
+  ask(v, "text");
+}
+$("#sendBtn").addEventListener("click", sendText);
+$("#textIn").addEventListener("keydown", e=>{ if (e.key==="Enter"){ e.preventDefault(); sendText(); } });
+
+/* 快捷示例 */
+document.querySelectorAll(".chip").forEach(c=>{
+  c.addEventListener("click", ()=> ask(c.dataset.ask, "text"));
+});
+$("#clearBtn").addEventListener("click", ()=>{
+  $("#timeline").innerHTML = `<div class="empty">👇 按住麦克风说话，或点击左侧示例开始<br>所有处理都在本机完成，无网络上传</div>`;
+  emptyState();
+});
+/* 采集开关 */
+$("#twinOn").addEventListener("change", async e=>{
+  const on = e.target.checked;
+  try{ if (live) await fetch("/consent", { method:"POST",
+    headers:{"Content-Type":"application/json"}, body: JSON.stringify({on}) }); }
+  catch(_){}
+  toast(on ? "已开启行为采集（数字分身训练数据）" : "已暂停采集 —— 你的对话不会被记录");
+});
+
+/* ================= 预览模式：无后端自动演示 ================= */
+const DEMO = [
+  {type:"user_text", text:"我是王小明，需要办理入职", channel:"voice"},
+  {type:"assistant_text", text:"好的王小明，欢迎加入！接下来由我带你完成入职基础培训，共 5 节。说「下一个」继续，也可以随时问我公司制度。现在开始第一节：公司简介与组织架构——我们是一家做鞋服供应链数字化的企业。", intent:"onboarding"},
+  {type:"user_text", text:"下一个", channel:"voice"},
+  {type:"assistant_text", text:"第二节 考勤制度：工作日 9:00–18:00，弹性打卡；每月迟到 3 次以内不扣绩效。记住了吗？说「下一个」继续。", intent:"onboarding"},
+  {type:"user_text", text:"差旅住宿标准是多少", channel:"voice"},
+  {type:"assistant_text", text:"国内出差住宿标准为一线城市每晚 500 元，其他城市 350 元（出处：《报销流程》差旅标准）", intent:"kb_qa", quote:"报销流程"},
+  {type:"user_text", text:"下一个", channel:"voice"},
+  {type:"assistant_text", text:"第三节 报销流程…第四节 信息安全…第五节 福利与考勤答疑。恭喜你，5 节入职培训全部完成！", intent:"onboarding"},
+  {type:"user_text", text:"报销怎么走流程", channel:"voice"},
+  {type:"assistant_text", text:"先填报销单→贴发票→部门负责人审批→财务 3 个工作日内打款（出处：《报销流程》）", intent:"kb_qa"},
+  {type:"user_text", text:"呼叫李华", channel:"voice"},
+  {type:"assistant_text", text:"好的，正在通过音箱呼叫李华（行政部·分机 801），请稍等。", intent:"call"},
+  {type:"user_text", text:"给张伟发消息下午三点会议室过一下季度方案", channel:"voice"},
+  {type:"assistant_text", text:"好，已通过企业微信给张伟（技术部）发消息：「下午三点会议室过一下季度方案」，已发出。", intent:"wecom_send"},
+  {type:"user_text", text:"再见", channel:"voice"},
+  {type:"assistant_text", text:"好，有事随时叫我，再见！", intent:"session_end"},
+];
+const DEMO_ACTIONS = {
+  onboarding:{icon:"🎓", title:"入职培训", detail:"王小明 · 5 节基础培训", action:"onboarding.start", done:true},
+  kb_qa:{icon:"📚", title:"知识库问答", detail:"报销/差旅制度命中", source:"报销流程", action:"kb.search", done:true},
+  call:{icon:"📞", title:"呼叫员工", detail:"李华 · 行政部 分机 801", action:"speaker.call:lihua", done:true},
+  wecom_send:{icon:"✉️", title:"发送企业微信", detail:"给张伟发消息：下午三点会议室过一下季度方案", action:"wecom.send_text:zhangwei", done:true},
+  session_end:{icon:"👋", title:"会话结束", detail:"本次会话结束", action:"end_session", done:true},
+};
+function demoAnswer(text){
+  /* 预览模式：从脚本中找与输入最接近的下一句回复 */
+  const idx = DEMO.findIndex(d=>d.type==="user_text" && d.text===text);
+  let reply = {type:"assistant_text", text:"预览模式：连上本地服务后可获得真实回答。", intent:"unknown"};
+  let act = null;
+  if (idx>=0 && DEMO[idx+1]) reply = DEMO[idx+1];
+  setTimeout(()=>{ assistantBubble(reply.text, reply.intent, true, true);
+    const a = DEMO_ACTIONS[reply.intent]; if (a) pushAction(a); }, 420);
+}
+function playDemo(){
+  $("#liveBadge").textContent="● 预览";
+  $("#liveBadge").classList.add("demo");
+  setTimeout(()=>{
+    if (!$("#timeline").querySelector(".row")) demoLine(0);
+  }, 300);
+  let i = 0;
+  function demoLine(){
+    if (i>=DEMO.length) return;
+    const d = DEMO[i];
+    if (d.type==="user_text"){ userBubble(d.text, d.channel||"voice"); setPhase("listening"); setTimeout(()=>setPhase("thinking"), 900); }
+    else{
+      const a = DEMO_ACTIONS[d.intent]; if (a) setTimeout(()=>pushAction(a), 300);
+      assistantBubble(d.text, d.intent, true, true);
+    }
+    i++;
+    setTimeout(demoLine, d.type==="user_text" ? 1250 : 2600);
+  }
+}
+
+/* ================= 启动 ================= */
+(async function boot(){
+  try{
+    const ctl = new AbortController(); const timer = setTimeout(()=>ctl.abort(), 1500);
+    const r = await fetch("/health", { signal: ctl.signal }); clearTimeout(timer);
+    if (r.ok){ connect(); return; }
+    throw 0;
+  }catch(_){
+    live = false; playDemo();          // 直接双击打开本文件 / 服务未启动 → 设计预览
+  }
+})();
+</script>
+</body>
+</html>

@@ -36,6 +36,12 @@ _DEFAULTS = {
         "wecom": {"mode": "stub", "webhook_key": "", "corpid": "", "secret": "", "agentid": ""},
         "speaker": {"provider": "console"},
     },
+    "hud": {
+        "host": "127.0.0.1",
+        "port": 8765,
+        "brain": "enterprise",   # enterprise（企业数字助理）| echo（回声大脑）
+        "open_browser": True,
+    },
 }
 
 

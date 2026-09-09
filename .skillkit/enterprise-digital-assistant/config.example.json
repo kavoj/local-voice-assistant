@@ -1,0 +1,7 @@
+{
+  "wecom": {
+    "mode": "stub",
+    "webhook_key": "",
+    "note": "webhook 模式填群机器人 key；或用 WorkBuddy wecom 连接器按 userid 精发"
+  }
+}

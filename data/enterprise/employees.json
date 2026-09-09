@@ -1,0 +1,6 @@
+[
+  {"name": "谢培杰", "userid": "xiepeijie", "department": "总经办", "title": "总经理", "ext": "8001", "role": "admin"},
+  {"name": "李华", "userid": "lihua", "department": "人力资源部", "title": "HRBP", "ext": "8003", "role": "hr"},
+  {"name": "王小明", "userid": "wangxiaoming", "department": "研发部", "title": "软件工程师", "ext": "8002", "role": "staff"},
+  {"name": "张伟", "userid": "zhangwei", "department": "市场部", "title": "市场经理", "ext": "8004", "role": "staff"}
+]

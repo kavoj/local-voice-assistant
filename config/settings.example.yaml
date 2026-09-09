@@ -1,0 +1,55 @@
+# ===== 本地语音助手 配置模板 =====
+# 复制为 config/settings.yaml 后按需修改；所有路径均相对项目根目录。
+
+app:
+  name: "阿鹭"                # 助手名字（同时用作唤醒词尾缀参考）
+  mode: "console"             # console（无硬件演示）| device（真机，M1 后启用）
+
+sensing:
+  wake_word:
+    provider: "console"       # console | porcupine
+    keyword: "嘿阿鹭"
+    sensitivity: 0.6
+  vision:
+    provider: "console"       # console | yolo_face
+    camera_index: 0
+    min_face_confidence: 0.5
+
+voice:
+  asr:
+    provider: "console"       # console | funasr | whisper
+    model: "paraformer-zh"
+  tts:
+    provider: "console"       # console | edge-tts | cosyvoice
+    voice: "zh-CN-XiaoxiaoNeural"
+  vad:
+    silence_timeout_seconds: 30   # 对话中无声超时，结束会话
+
+brain:
+  provider: "echo"            # echo | workbuddy
+  system_prompt: "你是阿鹭，一个简洁务实的本地语音助手。回复口语化，控制在两句话以内。"
+
+twin:
+  consent_required: true      # 知情同意开关：true 时未同意不采集
+  cooldown_seconds: 300       # 同一人主动搭话冷却（秒）
+  redact_patterns:            # 导出训练集前的脱敏规则
+    - "(?<!\\d)1[3-9]\\d{9}(?!\\d)"            # 手机号
+    - "[\\w.+-]+@[\\w-]+\\.[\\w.]+"            # 邮箱
+    - "(?<!\\d)\\d{17}[0-9Xx](?!\\d)"          # 身份证
+
+paths:
+  sessions_dir: "data/sessions"
+  datasets_dir: "data/datasets"
+
+# ===== 企业数字助理 =====
+enterprise:
+  employees_path: "data/enterprise/employees.json"   # 员工名录（userid/分机/部门）
+  knowledge_dir: "data/knowledge"                    # 企业知识库（md/txt，本地摄取）
+  wecom:
+    mode: "stub"             # stub（离线演示）| webhook（群机器人）| app（自建应用，按 userid 精发）
+    webhook_key: ""          # webhook 模式：群机器人 key
+    corpid: ""               # app 模式：企业 ID
+    secret: ""               # app 模式：应用 Secret
+    agentid: ""              # app 模式：应用 AgentId
+  speaker:
+    provider: "console"      # console（桩）| 预留: xiaomi / tencent / 自研 HTTP 音箱

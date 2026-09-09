@@ -1,0 +1,8 @@
+pyyaml>=6.0
+
+# ===== 真机升级可选依赖（M1+，按需安装）=====
+# pvporcupine>=3.0        # 唤醒词
+# funasr>=1.1             # 中文 ASR（本地）
+# edge-tts>=6.1           # TTS（在线免费）
+# ultralytics>=8.2        # YOLO 人形检测
+# onnxruntime; insightface  # 人脸识别（本地）

@@ -60,3 +60,10 @@ hud:
   port: 8765
   brain: "enterprise"        # enterprise（企业数字助理：知识库/呼叫/发消息/培训）| echo
   open_browser: true         # 启动后自动打开浏览器
+  mascot_path: "assets/mascot/current.png"   # 助理形象图：替换此文件即换形象(png/jpg/webp/gif)
+
+# ===== 局域网设备控制（语音调度其他电脑）=====
+remote:
+  devices_path: "data/enterprise/devices.json"  # 设备名录：name/aliases/host/port/token
+  token: ""                  # 兜底 token；逐设备 token 优先
+

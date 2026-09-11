@@ -41,6 +41,11 @@ _DEFAULTS = {
         "port": 8765,
         "brain": "enterprise",   # enterprise（企业数字助理）| echo（回声大脑）
         "open_browser": True,
+        "mascot_path": "assets/mascot/current.png",  # 助理形象图，替换文件即换形象
+    },
+    "remote": {
+        "devices_path": "data/enterprise/devices.json",
+        "token": "",
     },
 }
 

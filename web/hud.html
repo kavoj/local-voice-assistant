@@ -105,6 +105,11 @@
   .core .state-sub{font-size:11px;color:var(--dim);line-height:1.5}
   .core .micro{display:none;font-size:10px;color:var(--ac);letter-spacing:1px;margin-top:2px}
   body[data-phase="listening"] .micro{display:block;animation:blink 1s steps(2) infinite}
+  /* 助理形象：/mascot 有图即显示（替换 assets/mascot/current.png 即换形象） */
+  .core .mascot{display:none;width:86px;height:86px;border-radius:50%;object-fit:cover;
+    border:1px solid var(--ac-line);box-shadow:0 0 22px var(--ac-glow);margin-bottom:4px}
+  body.has-mascot .core .mascot{display:block}
+  body.has-mascot .core .state-word{font-size:17px}
   .interim{
     position:absolute;left:14px;right:14px;top:-16px;transform:translateY(-100%);
     font-size:15px;line-height:1.5;color:var(--ac);text-align:center;min-height:0;
@@ -262,6 +267,7 @@
         <div class="ripple" data-page-node-id="8wleFjBNBtyjC0uUEmMMJw"></div><div class="ripple" data-page-node-id="DpHcTfBB7MhsgRwJZZz1AT"></div><div class="ripple" data-page-node-id="m61RlX5zh90CFcDuEqA9Bf"></div>
         <div class="glow" data-page-node-id="MJXOZRrltSpFEIOnI2r0d5"></div>
         <div class="core" data-page-node-id="Sd2B08JzRRbm6tW7T0dasI">
+          <img class="mascot" id="mascotImg" alt="" data-page-node-id="mascotImgSlot">
           <div class="state-word" id="stateWord" data-page-node-id="SdQF6ozbKTNsIymBbdlxxV">待命</div>
           <div class="state-sub" id="stateSub" data-page-node-id="6LkUqFEKCZU2nYM6V3IB9T">按住麦克风，或点下方示例</div>
           <div class="micro" data-page-node-id="R36qhk2IyI07olY5VOhWCz">● REC</div>
@@ -275,6 +281,7 @@
       <button class="chip" data-ask="报销怎么走流程" data-page-node-id="mv7LNqdq4glx3N5DbpXtSY"><span class="e" data-page-node-id="eHYVZMJgqAMl5Hi4pxSxsC">📚</span>报销怎么走流程<span class="k" data-page-node-id="ImWoRzttMUhRjYZrowFMXA">带出处</span></button>
       <button class="chip" data-ask="呼叫李华" data-page-node-id="fa0alW6khnUf9hAFTJCj7u"><span class="e" data-page-node-id="UaNDvaTBPw9zO7Xk3vDF58">📞</span>呼叫李华<span class="k" data-page-node-id="0Ey1IQLjVhBgVoPM2CXN2a">音箱</span></button>
       <button class="chip" data-ask="给张伟发消息下午三点会议室过一下季度方案" data-page-node-id="dIGpxNUdEogCOFhx1I49hq"><span class="e" data-page-node-id="uRE9FtdTEjONWHJXVGBFIg">✉️</span>给张伟发消息…<span class="k" data-page-node-id="VsiX4sN2ehKtBkRoaabs5K">企业微信</span></button>
+      <button class="chip" data-ask="让会议室电脑锁屏"><span class="e">🖥</span>让会议室电脑锁屏<span class="k">局域网</span></button>
     </div>
     <div class="hint" data-page-node-id="UKkOaDCZCU11nEXf9cjdlv">
       按住 <kbd data-page-node-id="kTaf7yketDvMCSthYM8FUE">🎙 麦克风</kbd> 或 <kbd data-page-node-id="T0U8QGw4iwWVQjjwjlw3Pj">空格</kbd> 说话 · 输入框回车=文字发送<br data-page-node-id="5vL6AInkJk0YqImiJugaZA">
@@ -353,6 +360,19 @@ function setPhase(p){
 function hexA(hex, a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 setPhase("idle");
+
+/* ================= 助理形象（可替换） ================= */
+/* 后端 /mascot 读配置 hud.mascot_path 的图片；替换文件即换形象，无需改代码 */
+(function loadMascot(){
+  try{
+    fetch("/mascot", {method:"GET"}).then(r => r.ok ? r.blob() : null).then(b => {
+      if(!b) return;
+      const img = document.getElementById("mascotImg");
+      img.src = URL.createObjectURL(b);
+      document.body.classList.add("has-mascot");
+    }).catch(()=>{});
+  }catch(e){ /* file:// 预览等无后端场景静默跳过 */ }
+})();
 
 /* ================= 时间线 ================= */
 function emptyState(){ const e=$(".empty"); e.style.display = (!$("#timeline").children.length) ? "" : "none"; }

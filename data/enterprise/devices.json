@@ -1,0 +1,10 @@
+[
+  {
+    "name": "会议室电脑",
+    "aliases": ["会议室"],
+    "host": "192.168.1.50",
+    "port": 8766,
+    "token": "change-me",
+    "_说明": "在被控电脑上运行：python3 -m assistant.remote.agent --port 8766 --token change-me；name/aliases 用于语音点名，可加多台"
+  }
+]

@@ -53,6 +53,38 @@ scripts\run.bat
 「我是王小明，办理入职」「报销怎么走流程」「呼叫李华」「给张伟发消息下午三点开会」。
 真实语音链路零安装依赖；交互界面即 `web/hud.html`，`file://` 直接双击也能看设计预览。
 
+## 🖥 语音调度局域网电脑（节点代理）
+
+在被控电脑上启动节点代理，就能用语音控制局域网内的机器：
+
+```bash
+# 被控电脑（mac/win/linux 通用，零依赖）
+python -m assistant.remote.agent --port 8766 --token sanwu-demo
+# 关机/重启指令默认拒绝；加 --allow-shutdown 才放开
+```
+
+主控机在 `data/enterprise/devices.json` 登记设备（name/aliases/host/port/token），然后对话：
+
+- 「让会议室电脑锁屏」「让会议室电脑截图」「让会议室电脑播报：三点开会」
+- 「让会议室电脑打开 http://…」「让会议室电脑执行脚本 probe.sh」「会议室电脑状态怎么样」
+- 安全设计：token 鉴权、指令白名单、exec_script 仅限节点 `~/.eda-agent/scripts/` 白名单后缀、关机需显式开启
+
+## 🎭 助理形象替换
+
+新形象图覆盖 `assets/mascot/current.png`（支持 png/jpg/webp/gif），重启服务即换——
+HUD 光环中心与安卓大屏 APK 同步生效，零代码改动（配置项 `hud.mascot_path`）。参考形象见 `assets/mascot/`。
+
+## 📦 演示设备部署包（Windows / macOS 压缩包）
+
+一条命令打出两个「拷走即用」的压缩包（含源码+种子数据+双击启动器+部署 README+形象图）：
+
+```bash
+python3 scripts/package_release.py          # 产出 dist/eda-voice-assistant-{macos,windows}.zip
+```
+
+macOS 解压双击 `启动语音助手.command`；Windows 先 `安装环境.bat` 再 `启动语音助手.bat`。
+节点代理启动器同理（`启动节点代理.*`）。安卓大屏版见 `docs/任务说明书-安卓大屏APK部署.md`。
+
 ## 三份必读文档
 
 | 文档 | 内容 |

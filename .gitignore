@@ -10,3 +10,6 @@ data/datasets/
 *.wav
 *.log
 .workbuddy/
+
+# 发布包构建产物
+dist/

@@ -47,6 +47,7 @@ ACTION_META = {
     "wecom_send":   ("✉️", "发送企业微信"),
     "kb_qa":        ("📚", "知识库问答"),
     "onboarding":   ("🎓", "入职培训"),
+    "remote_ctrl":  ("🖥", "局域网控制"),
     "session_end":  ("👋", "会话结束"),
     "unknown":      ("💬", "对话"),
 }
@@ -263,6 +264,8 @@ class HudHandler(BaseHTTPRequestHandler):
             self._stream_events()
         elif path in ("/", "/index.html"):
             self._serve_page()
+        elif path == "/mascot":
+            self._serve_mascot()
         else:
             self._send_json({"ok": False, "reason": f"no route: {path}"}, 404)
 
@@ -301,6 +304,26 @@ class HudHandler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
+
+    def _serve_mascot(self) -> None:
+        """助理形象图：读配置 hud.mascot_path，替换该文件即换形象（支持 png/jpg/webp/gif）。"""
+        rel = self.app.config.get("hud", {}).get("mascot_path", "assets/mascot/current.png")
+        mascot = Path(rel)
+        if not mascot.is_absolute():
+            mascot = PROJECT_ROOT / mascot
+        suffix = mascot.suffix.lower()
+        ctype = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                 ".webp": "image/webp", ".gif": "image/gif"}.get(suffix)
+        if ctype and mascot.exists():
+            body = mascot.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+        else:
+            self._send_json({"ok": False, "reason": "mascot not set"}, 404)
 
     def _stream_events(self) -> None:
         """SSE：连接即回放近期事件，之后持续推送（15s 心跳保活）。"""

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""企业数字助理大脑：意图路由 + Agent 技能集（知识问答/呼叫/发消息/入职培训）。
+"""企业数字助理大脑：意图路由 + Agent 技能集（知识问答/呼叫/发消息/入职培训/局域网控制）。
 
 意图规则零依赖（关键词+正则），保证可移植可测试；接 LLM 后可替换为模型意图分类，
-技能层（kb/onboarding/wecom/speaker）不变。
+技能层（kb/onboarding/wecom/speaker/remote）不变。
 """
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from typing import Optional
 
 from ..brain.base import BaseBrain, BrainReply
 from ..config import PROJECT_ROOT
+from ..remote.dispatch import RemoteDispatcher
 from .directory import EmployeeDirectory
 from .knowledge import KnowledgeBase
 from .onboarding import OnboardingSkill
@@ -41,6 +42,7 @@ class EnterpriseBrain(BaseBrain):
         self.onboarding = OnboardingSkill(self.kb)
         self.wecom = WeComClient(config or {})
         self.speaker = None  # 延迟注入（create_enterprise_brain 注入），便于测试替换
+        self.remote = RemoteDispatcher(config or {})  # 局域网设备控制，无设备时空转
 
     # ---- 主入口 -----------------------------------------------------------
 
@@ -61,6 +63,12 @@ class EnterpriseBrain(BaseBrain):
                                   action=f"onboarding.progress:{self.onboarding.progress}",
                                   task_done=True)
             # onboarding.handle 返回 None 说明已不在培训态，继续走正常路由
+
+        # 0.5) 局域网设备控制（放在呼叫之前：设备名可能也像人名）
+        remote_hit = self.remote.match(stripped)
+        if remote_hit is not None:
+            reply_text, action, done = remote_hit
+            return self._emit(reply_text, intent="remote_ctrl", action=action, task_done=done)
 
         # 1) 呼叫员工
         if re.search(r"(呼叫|打电话给|打电话找|call)", stripped, re.IGNORECASE):

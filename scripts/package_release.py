@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 
-COPY_ITEMS = [  # 相对 ROOT 的文件/目录
+COPY_ITEMS = [  # 相对 ROOT 的文件/目录（演示设备部署包）
     "assistant",
     "web",
     "config/settings.example.yaml",
@@ -30,6 +30,18 @@ COPY_ITEMS = [  # 相对 ROOT 的文件/目录
     "requirements.txt",
     "LICENSE",
 ]
+# 完整工程包额外内容（给需要构建 APK / 二次开发的同事）
+COPY_ITEMS_FULL = [
+    "android",
+    "docs",
+    "scripts",
+    "tests",
+    "README.md",
+    "assets",
+]
+FULL_SKIP = {"__pycache__", ".venv", ".git", ".workbuddy", ".skillkit",
+             "__MACOSX", "node_modules", "dist", "build", ".gradle",
+             "screenshots", "local.properties"}
 SKIP_DIRS = {"__pycache__", ".venv", ".git", ".workbuddy", ".skillkit",
              "android", "__MACOSX", "node_modules", "screenshots"}
 
@@ -68,6 +80,48 @@ README = """# 企业数字助理 · 演示设备部署包（{osname}）
 """
 
 
+README_FULL = """# 企业数字助理 · 完整工程包（含安卓大屏工程）
+
+这个包是**完整源码工程**，用于：① 构建安卓大屏 APK ② 二次开发 ③ 本地跑语音助手。
+
+## 从哪开始
+
+- **要装到安卓大屏** → 打开 `docs/任务说明书-安卓大屏APK部署.md`，照着做（环境→构建→安装→联调→验收）
+- **只想在本机先跑起来看看** → {launch_main}
+- **要在局域网里被语音调度** → {launch_agent}
+
+## 包内结构
+
+```
+android/                    安卓大屏 APK 工程（WebView 薄壳，Kiosk 全屏常亮横屏）
+docs/任务说明书-安卓大屏APK部署.md   ★ APK 部署说明书（同事照此执行）
+docs/voice.md               语音对话三档落地
+docs/obsidian-guide.md      Obsidian 本地知识库联动
+assistant/                  助手源码（大脑/知识库/企业微信/音箱/局域网控制/数字分身）
+web/hud.html                可视化语音台界面
+scripts/package_release.py  重新打部署包
+data/knowledge/             知识库文档（可直接改）
+data/enterprise/            员工名录 employees.json + 设备名录 devices.json
+assets/mascot/current.png   助理形象（替换即换形象）
+```
+
+## 大屏联调要点
+
+1. 电脑端起后端：`python3 -m assistant.hud --host 0.0.0.0 --port 8765`（记下局域网 IP，防火墙放行 8765）
+2. 改 `android/app/src/main/assets/config.json` 的 `server_url` 为 `http://电脑IP:8765/`
+3. `cd android && ./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`
+4. adb 或 U 盘装到大屏，授予麦克风权限，打开即用
+
+节点代理 token：`{token}`（改 token 需同步 `data/enterprise/devices.json`）
+
+## 常见坑（完整版见任务说明书 §8）
+
+- 大屏白屏 = IP 不通/防火墙；先用大屏浏览器访问 `http://电脑IP:8765` 定位
+- 构建报 JDK 版本错 = 必须是 JDK 17；`ANDROID_HOME` 要配好
+- 按说话无反应 = 麦克风权限，或国产大屏无系统语音服务（先记录，文本输入可测）
+"""
+
+
 def _copy_item(src: Path, stage_dir: Path) -> None:
     """按相对项目根的路径复制到打包目录（保持原有层级，不额外嵌套）。"""
     target = stage_dir / src.relative_to(ROOT)
@@ -92,12 +146,22 @@ def stage(target: str, token: str) -> Path:
         shutil.rmtree(stage_dir)
     stage_dir.mkdir(parents=True)
 
-    for item in COPY_ITEMS:
+    items = COPY_ITEMS + (COPY_ITEMS_FULL if target == "full" else [])
+    for item in items:
         src = ROOT / item
         if not src.exists():
             print(f"  ! 跳过不存在的条目: {item}")
             continue
-        _copy_item(src, stage_dir)
+        if target == "full":
+            target_path = stage_dir / src.relative_to(ROOT)
+            if src.is_dir():
+                shutil.copytree(src, target_path, dirs_exist_ok=True,
+                                ignore=shutil.ignore_patterns(*FULL_SKIP, "*.pyc"))
+            else:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, target_path)
+        else:
+            _copy_item(src, stage_dir)
 
     # 种子设备名录：内置默认 token，开箱即联调
     devices = [{"name": "会议室电脑", "aliases": ["会议室"], "host": "192.168.1.50",
@@ -106,12 +170,25 @@ def stage(target: str, token: str) -> Path:
     _write(stage_dir / "data/enterprise/devices.json",
            __import__("json").dumps(devices, ensure_ascii=False, indent=2))
 
-    if target == "macos":
-        launch_main = MAC_RUN
-        launch_agent = MAC_AGENT.replace("{token}", token)
-    else:
+    if target == "windows":
         launch_main = WIN_ENV + "\n\n```bat\n" + WIN_RUN + "\n```"
         launch_agent = "```bat\n" + WIN_AGENT.replace("{token}", token) + "\n```"
+    else:  # macos / full
+        launch_main = MAC_RUN
+        launch_agent = MAC_AGENT.replace("{token}", token)
+
+    if target == "full":
+        readme = (README_FULL
+                  .replace("{launch_main}", launch_main)
+                  .replace("{launch_agent}", launch_agent)
+                  .replace("{token}", token))
+        _write(stage_dir / "启动语音助手.command", MAC_RUN, executable=True)
+        _write(stage_dir / "启动节点代理.command", MAC_AGENT.replace("{token}", token), executable=True)
+        _write(stage_dir / "安装环境.bat", WIN_ENV)
+        _write(stage_dir / "启动语音助手.bat", WIN_RUN)
+        _write(stage_dir / "启动节点代理.bat", WIN_AGENT.replace("{token}", token))
+        _write(stage_dir / "README-完整工程包.md", readme)
+        return stage_dir
 
     readme = (README
               .replace("{osname}", "macOS" if target == "macos" else "Windows")
@@ -206,17 +283,22 @@ pause
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="打包演示设备部署包")
+    parser = argparse.ArgumentParser(description="打包演示设备部署包 / 完整工程包")
     parser.add_argument("--token", default="sanwu-demo", help="包内节点代理默认 token")
+    parser.add_argument("--only", choices=["macos", "windows", "full"],
+                        help="只打指定包（默认三个都打）")
     args = parser.parse_args()
 
     DIST.mkdir(parents=True, exist_ok=True)
     outputs = []
-    for target in ("macos", "windows"):
+    targets = [args.only] if args.only else ["macos", "windows", "full"]
+    names = {"macos": "eda-voice-assistant-macos.zip",
+             "windows": "eda-voice-assistant-windows.zip",
+             "full": "eda-voice-assistant-full.zip"}
+    for target in targets:
         print(f"[pack] 组装 {target} …")
         stage_dir = stage(target, args.token)
-        out = zip_dir(stage_dir, f"eda-voice-assistant-{target}.zip",
-                      f"eda-voice-assistant-{target}")
+        out = zip_dir(stage_dir, names[target], names[target][:-4])
         outputs.append(out)
         shutil.rmtree(stage_dir)
         print(f"       -> {out.name}  {out.stat().st_size/1024/1024:.1f} MB")

@@ -79,11 +79,15 @@ HUD 光环中心与安卓大屏 APK 同步生效，零代码改动（配置项 `
 一条命令打出两个「拷走即用」的压缩包（含源码+种子数据+双击启动器+部署 README+形象图）：
 
 ```bash
-python3 scripts/package_release.py          # 产出 dist/eda-voice-assistant-{macos,windows}.zip
+python3 scripts/package_release.py     # 产出三个包：
+#   dist/eda-voice-assistant-macos.zip    演示设备（macOS，双击启动）
+#   dist/eda-voice-assistant-windows.zip  演示设备（Windows）
+#   dist/eda-voice-assistant-full.zip     完整工程（含 android/ 与 docs/，给要构建 APK 的同事）
 ```
 
 macOS 解压双击 `启动语音助手.command`；Windows 先 `安装环境.bat` 再 `启动语音助手.bat`。
-节点代理启动器同理（`启动节点代理.*`）。安卓大屏版见 `docs/任务说明书-安卓大屏APK部署.md`。
+节点代理启动器同理（`启动节点代理.*`）。安卓大屏版见 `docs/任务说明书-安卓大屏APK部署.md`，
+交接话术见 `docs/给同事的任务话术.md`。
 
 ## 三份必读文档
 

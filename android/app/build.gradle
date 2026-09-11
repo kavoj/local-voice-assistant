@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.sanwu.eda'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.sanwu.eda"
+        minSdk 24          // Android 7.0+，覆盖绝大多数大屏/广告机
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // 正式对外分发时再配置签名；先出 debug 包即可侧载安装
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}

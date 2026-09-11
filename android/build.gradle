@@ -1,0 +1,4 @@
+// 根构建脚本：指定 Android Gradle Plugin 版本（需 JDK 17）
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+}
